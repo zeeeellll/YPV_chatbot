@@ -20,7 +20,6 @@ def load_text_from_file(path: str) -> str:
     else:
         raise ValueError("Unsupported file type: " + ext)
 
-
 def chunk_text(text: str, chunk_size=500, overlap=50):
     # naive chunker by words
     words = text.split()

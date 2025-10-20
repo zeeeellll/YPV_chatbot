@@ -42,19 +42,6 @@ def main():
         traceback.print_exc()
         return
 
-
-    # # 3) create embeddings in batches
-    # texts = [d["text"] for d in docs]
-    # print(f"Embedding {len(texts)} chunks...")
-    # embeddings = model.encode(texts, show_progress_bar=True, convert_to_numpy=True)
-
-    # # 4) create faiss index (cosine similarity via normalized vectors + inner product)
-    # dim = embeddings.shape[1]
-    # index = faiss.IndexFlatIP(dim)
-    # # normalize embeddings for cosine similarity
-    # faiss.normalize_L2(embeddings)
-    # index.add(embeddings)
-
     # 3️⃣ Create embeddings in batches
     texts = [d["text"] for d in docs]
     print(f"Embedding {len(texts)} chunks...")

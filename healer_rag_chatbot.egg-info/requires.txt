@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+openai
+faiss-cpu
+sentence-transformers
+tqdm
+PyPDF2
+python-multipart
+pydantic
+streamlit>=1.50.0

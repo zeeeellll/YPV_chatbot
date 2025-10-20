@@ -1,0 +1,29 @@
+[project]
+name = "healer-rag-chatbot"
+version = "0.1.0"
+description = "A RAG-based healer assistant chatbot using FAISS and OpenAI text generation."
+authors = [
+  { name = "Zeel Mistry" }
+]
+readme = "README.md"
+requires-python = ">=3.10"
+
+dependencies = [
+  "fastapi",
+  "uvicorn[standard]",
+  "openai",
+  "faiss-cpu",
+  "sentence-transformers",
+  "tqdm",
+  "PyPDF2",
+  "python-multipart",
+  "pydantic",
+  "streamlit>=1.50.0",
+]
+
+[tool.uv]
+# UV configuration
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"

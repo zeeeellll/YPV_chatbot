@@ -1,0 +1,17 @@
+Metadata-Version: 2.4
+Name: healer-rag-chatbot
+Version: 0.1.0
+Summary: A RAG-based healer assistant chatbot using FAISS and OpenAI text generation.
+Author: Zeel Mistry
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+Requires-Dist: fastapi
+Requires-Dist: uvicorn[standard]
+Requires-Dist: openai
+Requires-Dist: faiss-cpu
+Requires-Dist: sentence-transformers
+Requires-Dist: tqdm
+Requires-Dist: PyPDF2
+Requires-Dist: python-multipart
+Requires-Dist: pydantic
+Requires-Dist: streamlit>=1.50.0

@@ -72,7 +72,7 @@ st.title("💬 RAG Chatbot")
 st.caption("Ask any question — responses are strictly based on your uploaded data.")
 
 # Chat input box
-user_question = st.text_area("Ask your question:", placeholder="e.g. What is energy healing?", height=100)
+user_question = st.text_area("Ask your question:", placeholder="Ask anything from uploaded documents", height=100)
 
 # Retrieval settings (optional slider)
 TOP_K = 3

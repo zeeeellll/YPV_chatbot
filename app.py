@@ -60,7 +60,7 @@ def call_openai_generation(prompt: str, max_tokens=512, temperature=0.2):
 
 # STREAMLIT UI
 
-st.title("🧘‍♀️ YPV Healer RAG Chatbot")
+st.title("RAG Chatbot")
 st.markdown(
     "This chatbot retrieves relevant healing information from stored documents and "
     "generates responses based on the provided context."
@@ -77,12 +77,12 @@ with col2:
 conditions = st.text_input("Known Conditions (comma-separated)", "")
 
 # Question
-st.subheader("💬 Ask a Healing Question")
+st.subheader("💬 Ask a Question: ")
 user_question = st.text_area("Enter your question:", placeholder="e.g. How to heal chronic back pain?")
 top_k = st.slider("Number of documents to retrieve (Top K):", 1, 10, TOP_K)
 
 # Submit
-if st.button("🔍 Get Healing Guidance"):
+if st.button("🔍 Get Guidance"):
     if not user_question.strip():
         st.warning("Please enter a question first.")
     else:
@@ -122,7 +122,7 @@ if st.button("🔍 Get Healing Guidance"):
                 answer = call_openai_generation(prompt, max_tokens=700, temperature=0.2)
 
             st.success("✅ Response generated!")
-            st.markdown("### 🧘‍♂️ Healing Recommendation:")
+            st.markdown("### Answer:")
             st.write(answer)
 
             # Optional: show retrieved docs

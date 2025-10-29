@@ -50,7 +50,7 @@ def call_openai_generation(prompt: str, max_tokens=512, temperature=0.2):
     resp = client.chat.completions.create(
         model="gpt-4o-mini",  # or "gpt-4o", "gpt-4-turbo"
         messages=[
-            {"role": "system", "content": "You are a healing assistant using YPV knowledge."},
+            {"role": "system", "content": "You are a RAG chatbot."},
             {"role": "user", "content": prompt}
         ],
         max_tokens=max_tokens,
@@ -62,35 +62,34 @@ def call_openai_generation(prompt: str, max_tokens=512, temperature=0.2):
 
 st.title("RAG Chatbot")
 st.markdown(
-    "This chatbot retrieves relevant healing information from stored documents and "
+    "This chatbot retrieves relevant information from stored documents and "
     "generates responses based on the provided context."
 )
+st.set_page_config(page_title="RAG Chatbot", page_icon="💬", layout="centered")
 
-# Patient info
-st.subheader("🩺 Patient Information")
-col1, col2 = st.columns(2)
-with col1:
-    name = st.text_input("Name", "")
-    age = st.number_input("Age", min_value=0, max_value=120, step=1)
-with col2:
-    history = st.text_area("Patient History", "")
-conditions = st.text_input("Known Conditions (comma-separated)", "")
+# Header
+st.title("💬 RAG Chatbot")
+st.caption("Ask any question — responses are strictly based on your uploaded data.")
 
-# Question
-st.subheader("💬 Ask a Question: ")
-user_question = st.text_area("Enter your question:", placeholder="e.g. How to heal chronic back pain?")
+# Chat input box
+user_question = st.text_area("Ask your question:", placeholder="e.g. What is energy healing?", height=100)
+
+# Retrieval settings (optional slider)
+TOP_K = 3
 top_k = st.slider("Number of documents to retrieve (Top K):", 1, 10, TOP_K)
 
-# Submit
-if st.button("🔍 Get Guidance"):
+# RAG prompt template
+
+# Action button
+if st.button("🔍 Get Answer"):
     if not user_question.strip():
-        st.warning("Please enter a question first.")
+        st.warning("Please enter a question.")
     else:
         with st.spinner("Retrieving relevant context..."):
             retrieved = retrieve(user_question, top_k=top_k)
 
         if not retrieved:
-            st.error("No relevant documents found.")
+            st.error("No relevant context found.")
         else:
             # Build context
             context_blocks = [
@@ -99,33 +98,22 @@ if st.button("🔍 Get Guidance"):
             ]
             context_text = "\n\n---\n\n".join(context_blocks)
 
-            # Patient summary
-            patient_summary = (
-                f"Patient name: {name}\nAge: {age}\nHistory: {history}\n"
-                f"Known conditions: {conditions}\n"
-            )
-
-            # Build RAG prompt
+            # Build prompt
             prompt = RAG_PROMPT_TEMPLATE.format(
-                system_instructions=(
-                    "You are a healer assistant. Use ONLY the information from the provided CONTEXT "
-                    "to make recommendations. If the answer is not in the context, say you couldn't "
-                    "find clear guidance."
-                ),
                 context=context_text,
-                patient_info=patient_summary,
                 user_question=user_question,
             )
 
             # Generate answer
-            with st.spinner("Generating healing guidance..."):
+            with st.spinner("Generating response..."):
                 answer = call_openai_generation(prompt, max_tokens=700, temperature=0.2)
 
+            # Display answer
             st.success("✅ Response generated!")
-            st.markdown("### Answer:")
+            st.markdown("### 🧠 Answer:")
             st.write(answer)
 
-            # Optional: show retrieved docs
+            # Optional: show retrieved context
             with st.expander("📚 View Retrieved Context"):
                 for i, r in enumerate(retrieved, 1):
                     st.markdown(f"**{i}. Source:** {r.get('source')} | Chunk: {r.get('chunk_id')}")

@@ -1,68 +1,75 @@
-# ingest.py
-import os
-import pickle
-from openai import embeddings
-from tqdm import tqdm
-from sentence_transformers import SentenceTransformer
+import streamlit as st
 import faiss
-from utils import load_text_from_file, chunk_text
+import pickle
 import numpy as np
+from sentence_transformers import SentenceTransformer
+from openai import OpenAI
 
-# Config
-DATA_DIR = os.path.dirname(r"C:\Users\MAHADEV\Downloads\1st.pdf") # directory containing your pdf
-PDF_FILE = r"C:\Users\MAHADEV\Downloads\1st.pdf" # specific pdf file
-INDEX_DIR = "vector_store"
-EMBED_MODEL_NAME = "all-MiniLM-L6-v2"  # small and fast; change if you want better embeddings
-CHUNK_SIZE = 500
-CHUNK_OVERLAP = 50
+# ---- CONFIG ----
+INDEX_PATH = "vector_store/index.faiss"
+META_PATH = "vector_store/metadata.pkl"
+EMBED_MODEL_NAME = "all-MiniLM-L6-v2"
 
-os.makedirs(INDEX_DIR, exist_ok=True)
-
-def main():
-    # 1) load model
+# ---- LOAD EMBEDDINGS + MODEL ----
+@st.cache_resource
+def load_index_and_model():
+    index = faiss.read_index(INDEX_PATH)
+    with open(META_PATH, "rb") as f:
+        metadata = pickle.load(f)
     model = SentenceTransformer(EMBED_MODEL_NAME)
+    return index, metadata, model
 
-    # 2) read the PDF file and chunk
-    docs = []  # list of dicts: {"text":..., "source":..., "meta":...}
-    try:
-        print(f"Attempting to read file: {PDF_FILE}")
-        text = load_text_from_file(PDF_FILE)
-        print(f"Successfully read file. Text length: {len(text)}")
-        fname = os.path.basename(PDF_FILE)
-        chunks = chunk_text(text, CHUNK_SIZE, CHUNK_OVERLAP)
-        print(f"Created {len(chunks)} chunks")
-        docs.extend([{
-            "text": c,
-            "source": fname,
-            "chunk_id": i
-        } for i, c in enumerate(chunks)])
-    except Exception as e:
-        print(f"Error reading file {PDF_FILE}: {e}")
-        import traceback
-        traceback.print_exc()
-        return
+# ---- SEARCH FUNCTION ----
+def retrieve_docs(query, index, metadata, model, top_k=3):
+    query_vec = model.encode([query], convert_to_numpy=True).astype("float32")
+    faiss.normalize_L2(query_vec)
+    D, I = index.search(query_vec, top_k)
+    retrieved = [metadata[i] for i in I[0]]
+    return retrieved
 
-    # 3️⃣ Create embeddings in batches
-    texts = [d["text"] for d in docs]
-    print(f"Embedding {len(texts)} chunks...")
-    embeddings = model.encode(texts, show_progress_bar=True, convert_to_numpy=True)
+# ---- LLM RESPONSE ----
+def generate_answer(query, retrieved_docs):
+    context = "\n\n".join([doc["text"] for doc in retrieved_docs])
+    prompt = f"""
+You are a helpful AI assistant. Use the following context to answer the user question.
+If the answer is not in the context, say "I don't have enough information from the document."
 
-    # 4️⃣ Create FAISS index (cosine similarity)
-    import numpy as np
-    dim = embeddings.shape[1]
-    index = faiss.IndexFlatIP(dim)
+Context:
+{context}
 
-    # ✅ normalize + convert dtype
-    embeddings = embeddings.astype("float32")
-    faiss.normalize_L2(embeddings)
-    index.add(embeddings) # type: ignore
-    
-    # 5) persist index + metadata
-    faiss.write_index(index, os.path.join(INDEX_DIR, "index.faiss"))
-    with open(os.path.join(INDEX_DIR, "metadata.pkl"), "wb") as f:
-        pickle.dump(docs, f)
+Question: {query}
 
-    print("Saved FAISS index and metadata.")
+Answer:
+"""
 
-if __name__ == "__main__":
-    main()
+    client = OpenAI()
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",  # or "gpt-4-turbo"
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.2
+    )
+    return response.choices[0].message.content.strip()
+
+# ---- STREAMLIT UI ----
+st.set_page_config(page_title="RAG Chatbot", layout="centered")
+
+st.title("📚 RAG Chatbot")
+st.caption("Ask questions based on your ingested PDF document")
+
+query = st.text_input("Enter your question here:")
+
+if "history" not in st.session_state:
+    st.session_state.history = []
+
+if st.button("Ask") and query:
+    index, metadata, model = load_index_and_model()
+    retrieved_docs = retrieve_docs(query, index, metadata, model)
+    answer = generate_answer(query, retrieved_docs)
+
+    st.session_state.history.append({"query": query, "answer": answer})
+
+# Display conversation history
+for item in reversed(st.session_state.history):
+    st.markdown(f"**You:** {item['query']}")
+    st.markdown(f"**Bot:** {item['answer']}")
+    st.markdown("---")
